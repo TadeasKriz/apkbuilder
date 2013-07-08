@@ -1,0 +1,55 @@
+== apkbuilder ==
+
+=== Important note! ===
+
+*This project is currently proof of concept and its API will probably change!*
+
+=== Introduction ===
+
+Apkbuilder is simple java library, primarily for use with arquillian to test Android applications.
+
+
+=== Setting up ===
+
+In your [role="filename"]`pom.xml` add following dependency:
+
++<dependency>
+	<groupId>org.arquillian.android</groupId>
+	<artifactId>apkbuilder-api</artifactId>
+	<version>1.0-SNAPSHOT</version>
+</dependency>+
+
+If you're using android resources in deployed classes, make sure the +R+ class doesn't contain final fields. With +android-maven-plugin+ this behavior can by achieved by specifing parameter +aaptExtraArgs+ for goal +android:generate-sources+ with value +--non-constant-id+. This way, aapt won't make fields in generated R.java final. It's recommended to create new maven profile for testing, in which you'll specify this parameter as you should have final fields in production android apk!
+
+=== Usage ===
+
+==== With shrinkwrap-android ====
+
+If you're using +shrinkwrap-android+ library (recommended), +apkbuilder+ is a piece of cake to use. All you have to do, is to create an archive through +shrinkwrap-android+ and pass it into static +init+ method of +ApkBuilder+.
+
++AndroidArchive archive = ShrinkWrap.create(AndroidArchive.class);
+
+// add resources, classes and AndroidManifest
+
+ApkBuilder builder = ApkBuilder.init(archive);
+
+File finalApk = builder.build();+
+
+And that's it! Simple, isn't it? There is also configuration, which you can access through +ApkBuilder#getConfiguration()+.
+
+==== Without shrinkwrap-android ====
+
+Of course you can use apkbuilder without using shrinkwrap-android. The process is very similar to the previous one, except you have to specify a directory with content, which you want to get built.
+
++ApkBuilder builder = ApkBuilder.init("/directory/with/content");
+
+File finalApk = builder.build();+
+
+Seems simple, but there's more you have to do. You have to follow predefined directory structure or the ApkBuilder won't be able to work.
+
+/asset - Android assets
+/res - Android resources
+/class - .class files you want to include in the APK
+/java - .java files you want to get compiled and then included in the APK
+/AndroidManifest.xml - valid AndroidManifest (this is required, otherwise it won't get built)
+
