@@ -1,15 +1,22 @@
 package org.arquillian.android.apkbuilder;
 
+import org.arquillian.android.apkbuilder.util.FileUtils;
 import org.jboss.shrinkwrap.android.api.spec.AndroidManifest;
 import org.jboss.shrinkwrap.android.api.spec.node.*;
 import org.jboss.shrinkwrap.api.ArchiveFactory;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.android.api.spec.AndroidArchive;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 /**
  * @author <a href="mailto:tkriz@redhat.com">Tadeas Kriz</a>
@@ -25,8 +32,8 @@ public class ApkBuilderTest {
                 .setLabel("ArquillianApkBuilderTest")
                 .addIntentFilter(
                         new IntentFilter()
-                            .addAction(new Action().setName("android.intent.action.MAIN"))
-                            .addCategory(new Category().setName("android.intent.category.LAUNCHER"))
+                                .addAction(new Action().setName("android.intent.action.MAIN"))
+                                .addCategory(new Category().setName("android.intent.category.LAUNCHER"))
                 );
 
         Application application = new Application()
@@ -36,11 +43,11 @@ public class ApkBuilderTest {
 
         AndroidManifest manifest = new AndroidManifest();
         manifest
-            .setApplication(application)
-            .setPackage("org.arquillian.android.apkbuilder")
-            .setVersionCode(1)
-            .setVersionName("1.0")
-            .setUsesSdk(new UsesSdk().setMinSdkVersion(17));
+                .setApplication(application)
+                .setPackage("org.arquillian.android.apkbuilder")
+                .setVersionCode(1)
+                .setVersionName("1.0")
+                .setUsesSdk(new UsesSdk().setMinSdkVersion(17));
 
         AndroidArchive archive = ShrinkWrap.create(AndroidArchive.class);
 
@@ -51,13 +58,42 @@ public class ApkBuilderTest {
         archive.addClass(MyActivity.class);
         archive.addAsAndroidManifest(manifest);
 
-        System.out.println(manifest.toString());
-
 
         ApkBuilder builder = ApkBuilder.init(archive);
 
         assertNotNull(builder.build());
     }
 
+    @Test
+    @Ignore
+    public void apkBuilderFromDirectory() {
+
+        Application application = new Application()
+                .setLabel("ArquillianApkBuilderTest");
+
+        AndroidManifest manifest = new AndroidManifest();
+        manifest
+                .setApplication(application)
+                .setPackage("org.arquillian.android.apkbuilder")
+                .setVersionCode(1)
+                .setVersionName("1.0")
+                .setUsesSdk(new UsesSdk().setMinSdkVersion(17));
+
+        File workingDirectory = FileUtils.prepareWorkingDirectory();
+        File manifestFile = new File(workingDirectory, "AndroidManifest.xml");
+
+        try {
+            FileWriter writer = new FileWriter(manifestFile);
+            writer.write(manifest.toXmlString());
+            writer.close();
+        } catch(IOException e) {
+            assertNull(e);
+        }
+
+        ApkBuilder builder = ApkBuilder.init("ApkBuilderTest", workingDirectory, true);
+
+        assertNotNull(builder.build());
+
+    }
 
 }

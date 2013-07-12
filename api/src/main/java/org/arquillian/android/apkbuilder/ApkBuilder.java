@@ -2,6 +2,7 @@ package org.arquillian.android.apkbuilder;
 
 import org.arquillian.android.apkbuilder.util.Command;
 import org.arquillian.android.apkbuilder.util.FileUtils;
+import org.arquillian.android.apkbuilder.util.SDKUtils;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ArchivePath;
 import org.jboss.shrinkwrap.api.Node;
@@ -20,7 +21,6 @@ public class ApkBuilder {
 
     private final File workingDirectory;
     private final Configuration configuration = new Configuration();
-
 
     private ApkBuilder(String name, File workingDirectory) {
         this.workingDirectory = workingDirectory;
@@ -91,11 +91,11 @@ public class ApkBuilder {
                 .add("package")
                 .add("-m")
                 .add("-J")
-                .add(workingDirectory.getPath() + File.separator + "java" + File.separator)
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/java/"))
                 .add("-M")
-                .add(workingDirectory.getPath() + File.separator + "AndroidManifest.xml")
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/AndroidManifest.xml"))
                 .add("-S")
-                .add(workingDirectory.getPath() + File.separator + "res" + File.separator)
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/res/"))
                 .add("-I")
                 .add(configuration.getAndroidJarPath());
 
@@ -111,9 +111,9 @@ public class ApkBuilder {
                 .add("-target")
                 .add("1.6")
                 .add("-d")
-                .add(workingDirectory.getPath() + File.separator + "target" + File.separator + "generated-classes")
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/generated-classes"))
                 .add("-s")
-                .add(workingDirectory.getPath() + File.separator + "target" + File.separator + "generated-sources"); // TODO do we need this (generated-sources)?
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/generated-sources")); // TODO do we need this (generated-sources)?
 
         findJavaSourceFiles(command);
 
@@ -121,7 +121,7 @@ public class ApkBuilder {
     }
 
     private void findJavaSourceFiles(Command command) {
-        File javaDirectory = new File(workingDirectory.getPath() + File.separator + "java");
+        File javaDirectory = new File(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/java"));
 
         findJavaSourceFiles(command, javaDirectory);
     }
@@ -144,9 +144,9 @@ public class ApkBuilder {
         command
                 .add(configuration.getDxPath())
                 .add("--dex")
-                .add("--output=" + workingDirectory.getPath() + File.separator + "target" + File.separator + "classes.dex")
-                .add(workingDirectory.getPath() + File.separator + "class")
-                .add(workingDirectory.getPath() + File.separator + "target" + File.separator + "generated-classes");
+                .add("--output=" + workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/classes.dex"))
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/class"))
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/generated-classes"));
 
         runCommand(command);
     }
@@ -158,13 +158,13 @@ public class ApkBuilder {
                 .add("package")
                 .add("-f")
                 .add("-M")
-                .add(workingDirectory.getPath() + File.separator + "AndroidManifest.xml")
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/AndroidManifest.xml"))
                 .add("-S")
-                .add(workingDirectory.getPath() + File.separator + "res" + File.separator)
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/res/"))
                 .add("-I")
                 .add(configuration.getAndroidJarPath())
                 .add("-F")
-                .add(workingDirectory.getPath() + File.separator + "target" + File.separator + configuration.getOutputName() + ".apk.unaligned");
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"));
 
         runCommand(command);
     }
@@ -172,8 +172,8 @@ public class ApkBuilder {
     private void addDexToApk() throws IOException {
 
         FileUtils.addFilesToExistingZip(
-            workingDirectory.getPath() + File.separator + "target" + File.separator + configuration.getOutputName() + ".apk.unaligned",
-            workingDirectory.getPath() + File.separator + "target" + File.separator + "classes.dex"
+            workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"),
+            workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/classes.dex")
         );
 
         /*Command command = new Command();
@@ -201,7 +201,7 @@ public class ApkBuilder {
                 .add("MD5withRSA")
                 .add("-digestalg")
                 .add("SHA1")
-                .add(workingDirectory.getPath() + File.separator + "target" + File.separator + configuration.getOutputName() + ".apk.unaligned")
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"))
                 .add(configuration.getKeyAlias());
 
         runCommand(command);
@@ -212,8 +212,8 @@ public class ApkBuilder {
         command
                 .add(configuration.getZipalignPath())
                 .add("4")
-                .add(workingDirectory.getPath() + File.separator + "target" + File.separator + configuration.getOutputName() + ".apk.unaligned")
-                .add(workingDirectory.getPath() + File.separator + "target" + File.separator + configuration.getOutputName() + ".apk");
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"))
+                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk"));
 
         runCommand(command);
     }
@@ -352,22 +352,16 @@ public class ApkBuilder {
     }
 
     public static class Configuration {
-        private static Map<Integer, String> BUILD_TOOLS_MAP = new HashMap<Integer, String>();
         private static String ANDROID_HOME = System.getenv("ANDROID_HOME");
         private static String JAVA_HOME = System.getenv("JAVA_HOME");
         private static int DEFAULT_API_LEVEL = 17;
 
-        static {
-            // TODO add other
-            BUILD_TOOLS_MAP.put(17, "android-4.2.2");
-        }
+        private final SDKUtils sdkUtils;
 
         private String outputName = null;
 
         private Integer apiLevel = null;
-        private String apiString = null;
         private String androidHome = null;
-        private String buildDirectory = null;
         private String aaptPath = null;
         private String aidlPath = null;
         private String dxPath = null;
@@ -384,6 +378,14 @@ public class ApkBuilder {
         private String javaBin = null;
         private String javacPath = null;
         private String jarsignerPath = null;
+
+        public Configuration() {
+            sdkUtils = new SDKUtils(this);
+        }
+
+        public SDKUtils getSdkUtils() {
+            return sdkUtils;
+        }
 
         public String getOutputName() {
             if(outputName == null) {
@@ -412,23 +414,6 @@ public class ApkBuilder {
             return this;
         }
 
-        public String getApiString() {
-            if(apiString == null) {
-                if(BUILD_TOOLS_MAP.containsKey(apiLevel)) {
-                    apiString = BUILD_TOOLS_MAP.get(apiLevel);
-                } else {
-                    apiString = BUILD_TOOLS_MAP.get(DEFAULT_API_LEVEL);
-                }
-            }
-
-            return apiString;
-        }
-
-        public Configuration setApiString(String apiString) {
-            this.apiString = apiString;
-            return this;
-        }
-
         public String getAndroidHome() {
             if(androidHome == null) {
                 androidHome = ANDROID_HOME;
@@ -442,22 +427,9 @@ public class ApkBuilder {
             return this;
         }
 
-        public String getBuildDirectory() {
-            if(buildDirectory == null) {
-                buildDirectory = getAndroidHome() + File.separator + "build-tools" + File.separator + getApiString();
-            }
-
-            return buildDirectory;
-        }
-
-        public Configuration setBuildDirectory(String buildDirectory) {
-            this.buildDirectory = buildDirectory;
-            return this;
-        }
-
         public String getAaptPath() {
             if(aaptPath == null) {
-                aaptPath = getBuildDirectory() + File.separator + "aapt";
+                aaptPath = sdkUtils.getBuildTool("aapt");
             }
 
             return aaptPath;
@@ -470,7 +442,7 @@ public class ApkBuilder {
 
         public String getAidlPath() {
             if(aidlPath == null) {
-                aidlPath = getBuildDirectory() + File.separator + "aidl";
+                aidlPath = sdkUtils.getBuildTool("aidl");
             }
 
             return aidlPath;
@@ -483,7 +455,7 @@ public class ApkBuilder {
 
         public String getDxPath() {
             if(dxPath == null) {
-                dxPath = getBuildDirectory() + File.separator + "dx";
+                dxPath = sdkUtils.getBuildTool("dx");
             }
 
             return dxPath;
@@ -496,7 +468,7 @@ public class ApkBuilder {
 
         public String getLlvmPath() {
             if(llvmPath == null) {
-                llvmPath = getBuildDirectory() + File.separator + "llvm-rs-cc";
+                llvmPath = sdkUtils.getBuildTool("llvm-rs-cc");
             }
 
             return llvmPath;
@@ -508,8 +480,8 @@ public class ApkBuilder {
         }
 
         public String getAndroidJarPath() {
-            if(androidJarPath == null) { // FIXME should depend on "target" or "min" SDK defined in AndroidManifest.xml !
-                androidJarPath = getAndroidHome() + File.separator + "platforms" + File.separator + "android-" + getApiLevel() + File.separator + "android.jar";
+            if(androidJarPath == null) {
+                androidJarPath = new File(sdkUtils.getPlatformDirectory(), "android.jar").getAbsolutePath();
             }
 
             return androidJarPath;
@@ -522,7 +494,7 @@ public class ApkBuilder {
 
         public String getZipalignPath() {
             if(zipalignPath == null) {
-                zipalignPath = getAndroidHome() + File.separator + "tools" + File.separator + "zipalign";
+                zipalignPath = sdkUtils.getPathForTool("zipalign");
             }
 
             return zipalignPath;
@@ -535,7 +507,7 @@ public class ApkBuilder {
 
         public String getKeystorePath() {
             if(keystorePath == null) {
-                keystorePath = System.getProperty("user.home") + File.separator + ".android" + File.separator + "debug.keystore";
+                keystorePath = System.getProperty("user.home") + FileUtils.platformIndependentPath("/.android/debug.keystore");
             }
 
             return keystorePath;
@@ -598,22 +570,9 @@ public class ApkBuilder {
             return this;
         }
 
-        public String getJavaBin() {
-            if(javaBin == null) {
-                javaBin = getJavaHome() + File.separator + "bin";
-            }
-
-            return javaBin;
-        }
-
-        public Configuration setJavaBin(String javaBin) {
-            this.javaBin = javaBin;
-            return this;
-        }
-
         public String getJavacPath() {
             if(javacPath == null) {
-                javacPath = getJavaBin() + File.separator + "javac";
+                javacPath = sdkUtils.getPathForJavaTool("javac");
             }
 
             return javacPath;
@@ -626,7 +585,7 @@ public class ApkBuilder {
 
         public String getJarsignerPath() {
             if(jarsignerPath == null) {
-                jarsignerPath = getJavaBin() + File.separator + "jarsigner";
+                jarsignerPath = sdkUtils.getPathForJavaTool("jarsigner");
             }
 
             return jarsignerPath;

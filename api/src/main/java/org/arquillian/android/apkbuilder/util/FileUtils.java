@@ -18,6 +18,10 @@ public class FileUtils {
     private static final Logger logger = Logger.getLogger(FileUtils.class.getName());
     private static final String TEMP_DIRECTORY = System.getProperty("java.io.tmpdir");
 
+    public static String platformIndependentPath(String path) {
+        return path.replace('/', File.separatorChar);
+    }
+
     public static File prepareWorkingDirectory() {
         return prepareWorkingDirectory(TEMP_DIRECTORY);
     }
