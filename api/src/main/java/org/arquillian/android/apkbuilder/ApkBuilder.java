@@ -1,4 +1,31 @@
+/*
+ * JBoss, Home of Professional Open Source
+ * Copyright 2013 Red Hat Inc. and/or its affiliates and other contributors
+ * as indicated by the @authors tag. All rights reserved.
+ * See the copyright.txt in the distribution for a
+ * full listing of individual contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.arquillian.android.apkbuilder;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Map;
+import java.util.UUID;
+import java.util.logging.Logger;
 
 import org.arquillian.android.apkbuilder.util.Command;
 import org.arquillian.android.apkbuilder.util.FileUtils;
@@ -6,12 +33,6 @@ import org.arquillian.android.apkbuilder.util.SDKUtils;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ArchivePath;
 import org.jboss.shrinkwrap.api.Node;
-
-import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.logging.Logger;
 
 /**
  * @author <a href="mailto:tkriz@redhat.com">Tadeas Kriz</a>
@@ -87,17 +108,17 @@ public class ApkBuilder {
     private void compileResources() throws IOException {
         Command command = new Command();
         command
-                .add(configuration.getAaptPath())
-                .add("package")
-                .add("-m")
-                .add("-J")
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/java/"))
-                .add("-M")
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/AndroidManifest.xml"))
-                .add("-S")
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/res/"))
-                .add("-I")
-                .add(configuration.getAndroidJarPath());
+            .add(configuration.getAaptPath())
+            .add("package")
+            .add("-m")
+            .add("-J")
+            .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/java/"))
+            .add("-M")
+            .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/AndroidManifest.xml"))
+            .add("-S")
+            .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/res/"))
+            .add("-I")
+            .add(configuration.getAndroidJarPath());
 
         runCommand(command);
     }
@@ -105,15 +126,19 @@ public class ApkBuilder {
     private void compileJava() throws IOException {
         Command command = new Command();
         command
-                .add(configuration.getJavacPath())
-                .add("-source")
-                .add("1.6")
-                .add("-target")
-                .add("1.6")
-                .add("-d")
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/generated-classes"))
-                .add("-s")
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/generated-sources")); // TODO do we need this (generated-sources)?
+            .add(configuration.getJavacPath())
+            .add("-source")
+            .add("1.6")
+            .add("-target")
+            .add("1.6")
+            .add("-d")
+            .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/generated-classes"))
+            .add("-s")
+            .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/generated-sources")); // TODO
+                                                                                                                       // do we
+                                                                                                                       // need
+                                                                                                                       // this
+                                                                                                                       // (generated-sources)?
 
         findJavaSourceFiles(command);
 
@@ -130,10 +155,10 @@ public class ApkBuilder {
 
         final File[] files = directory.listFiles();
 
-        for(File file : files) {
-            if(file.isDirectory()) {
+        for (File file : files) {
+            if (file.isDirectory()) {
                 findJavaSourceFiles(command, file);
-            } else if(file.getPath().endsWith(".java")) {
+            } else if (file.getPath().endsWith(".java")) {
                 command.add(file.getPath());
             }
         }
@@ -142,11 +167,11 @@ public class ApkBuilder {
     private void compileDex() throws IOException {
         Command command = new Command();
         command
-                .add(configuration.getDxPath())
-                .add("--dex")
-                .add("--output=" + workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/classes.dex"))
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/class"))
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/generated-classes"));
+            .add(configuration.getDxPath())
+            .add("--dex")
+            .add("--output=" + workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/classes.dex"))
+            .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/class"))
+            .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/generated-classes"));
 
         runCommand(command);
     }
@@ -154,17 +179,18 @@ public class ApkBuilder {
     private void packageApk() throws IOException {
         Command command = new Command();
         command
-                .add(configuration.getAaptPath())
-                .add("package")
-                .add("-f")
-                .add("-M")
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/AndroidManifest.xml"))
-                .add("-S")
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/res/"))
-                .add("-I")
-                .add(configuration.getAndroidJarPath())
-                .add("-F")
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"));
+            .add(configuration.getAaptPath())
+            .add("package")
+            .add("-f")
+            .add("-M")
+            .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/AndroidManifest.xml"))
+            .add("-S")
+            .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/res/"))
+            .add("-I")
+            .add(configuration.getAndroidJarPath())
+            .add("-F")
+            .add(workingDirectory.getAbsolutePath()
+                + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"));
 
         runCommand(command);
     }
@@ -172,37 +198,37 @@ public class ApkBuilder {
     private void addDexToApk() throws IOException {
 
         FileUtils.addFilesToExistingZip(
-            workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"),
+            workingDirectory.getAbsolutePath()
+                + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"),
             workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/classes.dex")
-        );
+            );
 
-        /*Command command = new Command();
-        command
-                .add(configuration.getAaptPath())
-                .add("add")
-                .add("-f")
-                .add(workingDirectory.getPath() + File.separator + "target" + File.separator + configuration.getOutputName() + ".apk.unaligned")
-                .add(workingDirectory.getPath() + File.separator + "target" + File.separator + "classes.dex");
-
-        runCommand(command);*/
+        /*
+         * Command command = new Command(); command .add(configuration.getAaptPath()) .add("add") .add("-f")
+         * .add(workingDirectory.getPath() + File.separator + "target" + File.separator + configuration.getOutputName() +
+         * ".apk.unaligned") .add(workingDirectory.getPath() + File.separator + "target" + File.separator + "classes.dex");
+         *
+         * runCommand(command);
+         */
     }
 
     private void signApk() throws IOException {
         Command command = new Command();
         command
-                .add(configuration.getJarsignerPath())
-                .add("-storepass")
-                .add(configuration.getKeystorePassword())
-                .add("-keystore")
-                .add(configuration.getKeystorePath())
-                .add("-keypass")
-                .add(configuration.getKeyPassword())
-                .add("-sigalg")
-                .add("MD5withRSA")
-                .add("-digestalg")
-                .add("SHA1")
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"))
-                .add(configuration.getKeyAlias());
+            .add(configuration.getJarsignerPath())
+            .add("-storepass")
+            .add(configuration.getKeystorePassword())
+            .add("-keystore")
+            .add(configuration.getKeystorePath())
+            .add("-keypass")
+            .add(configuration.getKeyPassword())
+            .add("-sigalg")
+            .add("MD5withRSA")
+            .add("-digestalg")
+            .add("SHA1")
+            .add(workingDirectory.getAbsolutePath()
+                + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"))
+            .add(configuration.getKeyAlias());
 
         runCommand(command);
     }
@@ -210,10 +236,12 @@ public class ApkBuilder {
     private void alignApk() throws IOException {
         Command command = new Command();
         command
-                .add(configuration.getZipalignPath())
-                .add("4")
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"))
-                .add(workingDirectory.getAbsolutePath() + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk"));
+            .add(configuration.getZipalignPath())
+            .add("4")
+            .add(workingDirectory.getAbsolutePath()
+                + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk.unaligned"))
+            .add(workingDirectory.getAbsolutePath()
+                + FileUtils.platformIndependentPath("/target/" + configuration.getOutputName() + ".apk"));
 
         runCommand(command);
     }
@@ -226,7 +254,7 @@ public class ApkBuilder {
         Process process = builder.start();
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line = null;
-        while((line = reader.readLine()) != null) {
+        while ((line = reader.readLine()) != null) {
             System.out.println(line);
         }
         reader.close();
@@ -237,10 +265,10 @@ public class ApkBuilder {
 
         Map<ArchivePath, Node> content = archive.getContent();
 
-        for(ArchivePath path : content.keySet()) {
+        for (ArchivePath path : content.keySet()) {
             Node node = content.get(path);
 
-            if(node.getAsset() == null) {
+            if (node.getAsset() == null) {
                 // this node is directory
                 File directory = new File(workingDirectory, path.get());
 
@@ -263,13 +291,13 @@ public class ApkBuilder {
 
                 } finally {
                     try {
-                        if(inputStream != null) {
+                        if (inputStream != null) {
                             inputStream.close();
                         }
-                        if(fileOutputStream != null) {
+                        if (fileOutputStream != null) {
                             fileOutputStream.close();
                         }
-                    } catch(IOException e) {
+                    } catch (IOException e) {
 
                     }
                 }
@@ -278,7 +306,6 @@ public class ApkBuilder {
 
             ArchivePath p = node.getPath();
         }
-
 
         return init(archive.getName(), workingDirectory, true);
     }
@@ -305,7 +332,7 @@ public class ApkBuilder {
 
     public static ApkBuilder init(String name, File directory, boolean safeToEdit) {
         File workingDirectory;
-        if(!safeToEdit) {
+        if (!safeToEdit) {
             workingDirectory = FileUtils.prepareWorkingDirectory();
 
             try {
@@ -388,7 +415,7 @@ public class ApkBuilder {
         }
 
         public String getOutputName() {
-            if(outputName == null) {
+            if (outputName == null) {
                 outputName = generateOutputName();
             }
 
@@ -400,9 +427,8 @@ public class ApkBuilder {
             return this;
         }
 
-
         public int getApiLevel() {
-            if(apiLevel == null) {
+            if (apiLevel == null) {
                 apiLevel = DEFAULT_API_LEVEL;
             }
 
@@ -415,7 +441,7 @@ public class ApkBuilder {
         }
 
         public String getAndroidHome() {
-            if(androidHome == null) {
+            if (androidHome == null) {
                 androidHome = ANDROID_HOME;
             }
 
@@ -428,7 +454,7 @@ public class ApkBuilder {
         }
 
         public String getAaptPath() {
-            if(aaptPath == null) {
+            if (aaptPath == null) {
                 aaptPath = sdkUtils.getBuildTool("aapt");
             }
 
@@ -441,7 +467,7 @@ public class ApkBuilder {
         }
 
         public String getAidlPath() {
-            if(aidlPath == null) {
+            if (aidlPath == null) {
                 aidlPath = sdkUtils.getBuildTool("aidl");
             }
 
@@ -454,7 +480,7 @@ public class ApkBuilder {
         }
 
         public String getDxPath() {
-            if(dxPath == null) {
+            if (dxPath == null) {
                 dxPath = sdkUtils.getBuildTool("dx");
             }
 
@@ -467,7 +493,7 @@ public class ApkBuilder {
         }
 
         public String getLlvmPath() {
-            if(llvmPath == null) {
+            if (llvmPath == null) {
                 llvmPath = sdkUtils.getBuildTool("llvm-rs-cc");
             }
 
@@ -480,7 +506,7 @@ public class ApkBuilder {
         }
 
         public String getAndroidJarPath() {
-            if(androidJarPath == null) {
+            if (androidJarPath == null) {
                 androidJarPath = new File(sdkUtils.getPlatformDirectory(), "android.jar").getAbsolutePath();
             }
 
@@ -493,7 +519,7 @@ public class ApkBuilder {
         }
 
         public String getZipalignPath() {
-            if(zipalignPath == null) {
+            if (zipalignPath == null) {
                 zipalignPath = sdkUtils.getPathForTool("zipalign");
             }
 
@@ -506,7 +532,7 @@ public class ApkBuilder {
         }
 
         public String getKeystorePath() {
-            if(keystorePath == null) {
+            if (keystorePath == null) {
                 keystorePath = System.getProperty("user.home") + FileUtils.platformIndependentPath("/.android/debug.keystore");
             }
 
@@ -519,7 +545,7 @@ public class ApkBuilder {
         }
 
         public String getKeystorePassword() {
-            if(keystorePassword == null) {
+            if (keystorePassword == null) {
                 keystorePassword = "android";
             }
 
@@ -532,7 +558,7 @@ public class ApkBuilder {
         }
 
         public String getKeyAlias() {
-            if(keyAlias == null) {
+            if (keyAlias == null) {
                 keyAlias = "androiddebugkey";
             }
 
@@ -545,7 +571,7 @@ public class ApkBuilder {
         }
 
         public String getKeyPassword() {
-            if(keyPassword == null) {
+            if (keyPassword == null) {
                 keyPassword = "android";
             }
 
@@ -558,7 +584,7 @@ public class ApkBuilder {
         }
 
         public String getJavaHome() {
-            if(javaHome == null) {
+            if (javaHome == null) {
                 javaHome = JAVA_HOME;
             }
 
@@ -571,7 +597,7 @@ public class ApkBuilder {
         }
 
         public String getJavacPath() {
-            if(javacPath == null) {
+            if (javacPath == null) {
                 javacPath = sdkUtils.getPathForJavaTool("javac");
             }
 
@@ -584,7 +610,7 @@ public class ApkBuilder {
         }
 
         public String getJarsignerPath() {
-            if(jarsignerPath == null) {
+            if (jarsignerPath == null) {
                 jarsignerPath = sdkUtils.getPathForJavaTool("jarsigner");
             }
 
@@ -598,62 +624,61 @@ public class ApkBuilder {
 
         public void validate() {
             File aapt = new File(getAaptPath());
-            if(!aapt.exists()) {
+            if (!aapt.exists()) {
                 throw new IllegalStateException("Aapt \"" + aapt.getPath() + "\" doesn't exist!");
             }
-            if(!aapt.isFile()) {
+            if (!aapt.isFile()) {
                 throw new IllegalStateException("Aapt \"" + aapt.getPath() + "\" isn't a file!");
             }
 
             File aidl = new File(getAidlPath());
-            if(!aidl.exists()) {
+            if (!aidl.exists()) {
                 throw new IllegalStateException("Aidl \"" + aidl.getPath() + "\" doesn't exist!");
             }
-            if(!aidl.isFile()) {
+            if (!aidl.isFile()) {
                 throw new IllegalStateException("Aidl \"" + aidl.getPath() + "\" isn't a file!");
             }
 
             File dx = new File(getDxPath());
-            if(!dx.exists()) {
+            if (!dx.exists()) {
                 throw new IllegalStateException("Dx \"" + dx.getPath() + "\" doesn't exist!");
             }
-            if(!dx.isFile()) {
+            if (!dx.isFile()) {
                 throw new IllegalStateException("Dx \"" + dx.getPath() + "\" isn't a file!");
             }
 
             File llvm = new File(getLlvmPath());
-            if(!llvm.exists()) {
+            if (!llvm.exists()) {
                 throw new IllegalStateException("Llvm \"" + llvm.getPath() + "\" doesn't exist!");
             }
-            if(!llvm.isFile()) {
+            if (!llvm.isFile()) {
                 throw new IllegalStateException("Llvm \"" + llvm.getPath() + "\" isn't a file!");
             }
 
             File androidJar = new File(getAndroidJarPath());
-            if(!androidJar.exists()) {
+            if (!androidJar.exists()) {
                 throw new IllegalStateException("Android.jar \"" + androidJar.getPath() + "\" doesn't exist!");
             }
-            if(!androidJar.isFile()) {
+            if (!androidJar.isFile()) {
                 throw new IllegalStateException("Android.jar \"" + androidJar.getPath() + "\" isn't a file!");
             }
 
             File javac = new File(getJavacPath());
-            if(!javac.exists()) {
+            if (!javac.exists()) {
                 throw new IllegalStateException("Javac \"" + javac.getPath() + "\" doesn't exist!");
             }
-            if(!javac.isFile()) {
+            if (!javac.isFile()) {
                 throw new IllegalStateException("Javac \"" + javac.getPath() + "\" isn't a file!");
             }
 
             File jarsigner = new File(getJarsignerPath());
-            if(!jarsigner.exists()) {
+            if (!jarsigner.exists()) {
                 throw new IllegalStateException("Jarsigner \"" + jarsigner.getPath() + "\" doesn't exist!");
             }
-            if(!jarsigner.isFile()) {
+            if (!jarsigner.isFile()) {
                 throw new IllegalStateException("Jarsigner \"" + jarsigner.getPath() + "\" isn't a file!");
             }
         }
     }
-
 
 }
